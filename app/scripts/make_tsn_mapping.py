@@ -52,10 +52,11 @@ def jaccard_metric_between_tsn_and_spgz(tsn_info, spgz_info):
 async def make_tsn_mapping():
     print("make_hypothesises started to work")
     with SessionLocal() as db:
+        all_spgz = (await db_api.sprav_edit.get_all_spgz(db))
         for new_tsn in (await db_api.sprav_edit.get_all_tsn(db)):
             tsn_info = {word for word in new_tsn.tsn_mapping_info.split(',')}
             best_spgzs = []
-            for new_spgz in (await db_api.sprav_edit.get_all_spgz(db)):
+            for new_spgz in all_spgz:
                 spgz_info = {word for word in new_spgz.mapping_info.split(',')}
                 score = count_f_score_between_tsn_and_spgz(tsn_info, spgz_info)
                 heappush(best_spgzs, (score, new_spgz.id))
