@@ -1,0 +1,24 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+sqlalchemy = "*"
+pydantic = "*"
+alembic = "*"
+psycopg2 = "*"
+uvicorn = "*"
+python-jose = "*"
+passlib = "*"
+fastapi = {extras = ["all"], version = "*"}
+fastapi-sqlalchemy = "*"
+python-dotenv = "*"
+openpyxl = "*"
+nltk = "*"
+pymorphy2 = "*"
+
+[dev-packages]
+
+[requires]
+python_version = "3.9"
