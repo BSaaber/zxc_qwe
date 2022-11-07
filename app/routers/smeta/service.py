@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
-from app.security import check_for_moderator_permission
+from app.security import check_for_user_permission
 from sqlalchemy.orm import Session
 from app.database.db_init import get_db
 from .schemas import *
@@ -18,7 +18,7 @@ def make_file_path(user_id: int):
 router = APIRouter(
     prefix="/smeta",
     tags=["smeta"],
-    dependencies=[Depends(check_for_moderator_permission)],
+    dependencies=[Depends(check_for_user_permission)],
 )
 
 
