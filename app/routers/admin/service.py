@@ -23,3 +23,14 @@ async def get_all_users(offset: int = 0, limit: int = 100, db: Session = Depends
     users = await db_api.users.get_users(db, offset, limit)
     return users
 
+
+@router.get("/users/{user_id}", response_model=db_schemas.UserReturn)
+async def get_user_by_id(user_id: int, db: Session = Depends(get_db)):
+    user = await db_api.users.get_user_by_id(db, user_id)
+    return user
+
+
+@router.post("/users/{user_id}/edit", response_model=db_schemas.UserReturn)
+async def edit_user(user_id: int, level: int, db: Session = Depends(get_db)):
+    user = await db_api.users.edit_user(db, user_id, level)
+    return user

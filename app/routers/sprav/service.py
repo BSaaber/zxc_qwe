@@ -48,8 +48,7 @@ async def get_spgz(offset: int = 0, limit: int = 100, db: Session = Depends(get_
 # EDIT ONE PIECE
 
 @router.post("/tsn/edit_one")
-async def edit_tsn_piece(update_in: TsnPieceEditIn, db: Session = Depends(get_db)):
-    update = TsnPieceEdit(**update_in.dict())
+async def edit_tsn_piece(update: TsnPieceEdit, db: Session = Depends(get_db)):
     tsn = await db_api.sprav_edit.edit_tsn_piece(db, update)
     if not tsn:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="error")

@@ -22,6 +22,11 @@ class UserBase(BaseModel):
     level: int
 
 
+class UserEdit(BaseModel):
+    id: int
+    level: int
+
+
 class UserCreate(UserBase):
     hashed_password: str
 
