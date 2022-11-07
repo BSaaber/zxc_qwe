@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
-from app.security import check_for_user_permission
+from app.security import check_for_moderator_permission
 from typing import List
 import app.database.api as db_api
 import app.database.schemas as db_schemas
@@ -11,7 +11,7 @@ from app.routers.sprav.schemas import *
 router = APIRouter(
     prefix="/sprav",
     tags=["sprav"],
-    dependencies=[Depends(check_for_user_permission)],
+    dependencies=[Depends(check_for_moderator_permission)],
 )
 
 
@@ -48,8 +48,7 @@ async def get_spgz(offset: int = 0, limit: int = 100, db: Session = Depends(get_
 # EDIT ONE PIECE
 
 @router.post("/tsn/edit_one")
-async def edit_tsn_piece(update_in: TsnPieceEditIn, db: Session = Depends(get_db)):
-    update = TsnPieceEdit(**update_in.dict())
+async def edit_tsn_piece(update: TsnPieceEdit, db: Session = Depends(get_db)):
     tsn = await db_api.sprav_edit.edit_tsn_piece(db, update)
     if not tsn:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="error")

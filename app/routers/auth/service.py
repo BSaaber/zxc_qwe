@@ -58,7 +58,7 @@ async def get_access_token(form_data: OAuth2PasswordRequestForm = Depends(), db:
     access_token = create_access_token(
         data={"sub": user.email}, expires_delta=access_token_expires
     )
-    return {"access_token": access_token, "token_type": "bearer", "user_id": user.id}
+    return {"access_token": access_token, "token_type": "bearer", "user_id": user.id, "level": user.level, "email": user.email}
 
 
 password_pattern = r'[A-Za-z0-9@#$%^&+=]{8,}'
