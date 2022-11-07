@@ -53,7 +53,10 @@ async def make_tsn_mapping():
     print("make_hypothesises started to work")
     with SessionLocal() as db:
         all_spgz = (await db_api.sprav_edit.get_all_spgz(db))
-        for new_tsn in (await db_api.sprav_edit.get_all_tsn(db)):
+        all_hypo = []
+        for k, new_tsn in enumerate(await db_api.sprav_edit.get_all_tsn(db)):
+            if k % 10 == 0:
+                print(k)
             tsn_info = {word for word in new_tsn.tsn_mapping_info.split(',')}
             best_spgzs = []
             for new_spgz in all_spgz:
@@ -69,7 +72,10 @@ async def make_tsn_mapping():
                                                                 probability=spgz_prob * 100,
                                                                 usage_counter=0,
                                                                 tsn_piece_id=new_tsn.id)
-                tsn_result = await db_api.sprav_edit.add_tsn_hypothesis(db, tsn_hypothesis)
+                all_hypo.append(tsn_hypothesis)
+
+        for tsn_hypothesis in all_hypo:
+            tsn_result = await db_api.sprav_edit.add_tsn_hypothesis(db, tsn_hypothesis)
 
         # for curr_tsn in (await db_api.sprav_edit.get_all_tsn(db)):
         #     p_queue = []
