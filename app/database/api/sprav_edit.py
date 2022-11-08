@@ -124,11 +124,13 @@ async def add_tsn_hypothesis(db: Session, hypothesis: schemas.TsnHypothesisCreat
 async def add_tsn_hypothesis_bulk(db: Session, hypothesises):
     hypothesises = [db_models.TsnHypothesis(**i.dict()) for i in hypothesises]
     db.bulk_save_objects(hypothesises)
+    db.commit()
 
 
 async def add_sn_hypothesis_bulk(db: Session, hypothesises):
     hypothesises = [db_models.SnHypothesis(**i.dict()) for i in hypothesises]
     db.bulk_save_objects(hypothesises)
+    db.commit()
 
 
 async def add_sn_piece_without_spgz(db: Session, sn_piece: schemas.SnPieceCreateWithoutSpgz):  # двойная запись?

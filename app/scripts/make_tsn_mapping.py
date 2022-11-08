@@ -66,7 +66,8 @@ async def make_tsn_mapping():
                 if len(best_spgzs) > 5:
                     heappop(best_spgzs)
 
-            for i, (spgz_prob, spgz_id) in enumerate(best_spgzs):
+            for i in range(5):
+                spgz_prob, spgz_id = heappop(best_spgzs)
                 tsn_hypothesis = db_schemas.TsnHypothesisCreate(priority=i,
                                                                 spgz_piece_id=spgz_id,
                                                                 probability=spgz_prob * 100,
@@ -74,24 +75,10 @@ async def make_tsn_mapping():
                                                                 tsn_piece_id=new_tsn.id)
                 all_hypo.append(tsn_hypothesis)
 
-        for tsn_hypothesis in all_hypo:
-            tsn_result = await db_api.sprav_edit.add_tsn_hypothesis(db, tsn_hypothesis)
+            if k != 0 and k % 1000 == 0:
+                tsn_result = await db_api.sprav_edit.add_tsn_hypothesis_bulk(db, all_hypo)
+                all_hypo = []
 
-        # for curr_tsn in (await db_api.sprav_edit.get_all_tsn(db)):
-        #     p_queue = []
-        #     heappush(p_queue, 1)
-        #     metric = 0
-        #     tsn_info = set(curr_tsn.tsn_mapping_info.split(','))
-        #     print(curr_tsn.text)
-        #     best_spgz = {}
-        #     for curr_spgz in all_spgz:
-        #         spgz_info = set(curr_spgz.mapping_info.split(','))
-        #         new_metric = jaccard_metric_between_tsn_and_spgz(tsn_info, spgz_info)
-        #         if new_metric > metric:
-        #             metric = new_metric
-        #             best_spgz = curr_spgz.name
-        #     print(best_spgz)
-        #     print(metric)
 
 
 loop = asyncio.get_event_loop()
