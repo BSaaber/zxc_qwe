@@ -63,7 +63,7 @@ def cell_is_empty(cell):
             not isinstance(cell, str) and not isinstance(cell, int) and not isinstance(cell, float))
 
 
-def mock():
+def mock(file: bytes):
     result = schemas.Smeta()
     smeta_category = schemas.SmetaCategory()
     smeta_line = schemas.SmetaLine()
@@ -83,6 +83,9 @@ def mock():
         smeta_category.lines.append(smeta_line)
     for i in range(3):
         result.categories.append(smeta_category)
+
+    workbook = load_workbook(BytesIO(file), data_only=True)
+
     return result
 
 
@@ -100,7 +103,7 @@ async def patch_smeta(db: Session, path: str, patches: schemas.PatchSmetaIn):
 
 
 async def parse_smeta(db: Session, file: bytes):
-    return mock()
+    return mock(file)
 
     workbook = load_workbook(BytesIO(file), data_only=True)  # .read()?
     worksheet = workbook.active

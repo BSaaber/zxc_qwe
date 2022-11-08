@@ -121,6 +121,14 @@ async def add_tsn_hypothesis(db: Session, hypothesis: schemas.TsnHypothesisCreat
     return new_hypothesis
 
 
+async def add_tsn_hypothesis_bulk(db: Session, hypothesises):
+    db.bulk_save_objects(hypothesises)
+
+
+async def add_sn_hypothesis_bulk(db: Session, hypothesises):
+    db.bulk_save_objects(hypothesises)
+
+
 async def add_sn_piece_without_spgz(db: Session, sn_piece: schemas.SnPieceCreateWithoutSpgz):  # двойная запись?
     new_sn_piece = db_models.SnPiece(**sn_piece.dict())
     db.add(new_sn_piece)
