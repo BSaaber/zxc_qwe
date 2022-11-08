@@ -103,7 +103,7 @@ async def patch_smeta(db: Session, path: str, patches: schemas.PatchSmetaIn):
 
 
 async def parse_smeta(db: Session, file: bytes):
-    return mock(file)
+    #return mock(file)
 
     workbook = load_workbook(BytesIO(file), data_only=True)  # .read()?
     worksheet = workbook.active
