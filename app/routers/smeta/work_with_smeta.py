@@ -188,6 +188,7 @@ async def parse_smeta(db: Session, file: bytes):
                     hypothesises = await db_api.sprav_edit.get_sn_hypothesises_by_sn_id(db, sn_piece.id)
                     if hypothesises is None:
                         print("no hypothesises")
+                        result.categories[-1].lines.pop()
                         #raise HTTPException(status_code=status.HTTP_500_BAD_REQUEST,
                         #                    detail=f"error: no hypothesises for sn code in line {line_index}: {result.categories[-1].lines[-1].code}\ncurrent building line: {result.categories[-1].lines[-1]}")
                     else:
@@ -205,6 +206,7 @@ async def parse_smeta(db: Session, file: bytes):
                     hypothesises = await db_api.sprav_edit.get_tsn_hypothesises_by_tsn_id(db, tsn_piece.id)
                     if hypothesises is None:
                         print("no hypothesises")
+                        result.categories[-1].lines.pop()
                         #raise HTTPException(status_code=status.HTTP_500_BAD_REQUEST,
                         #                    detail=f"error: no hypothesises for tsn code in line {line_index}: {result.categories[-1].lines[-1].code}\ncurrent building line: {result.categories[-1].lines[-1]}")
                     else:
