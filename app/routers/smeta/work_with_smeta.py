@@ -187,9 +187,12 @@ async def parse_smeta(db: Session, file: bytes):
                     print("sn piece: ", sn_piece)
                     hypothesises = await db_api.sprav_edit.get_sn_hypothesises_by_sn_id(db, sn_piece.id)
                     if hypothesises is None:
-                        raise HTTPException(status_code=status.HTTP_500_BAD_REQUEST,
-                                            detail=f"error: no hypothesises for sn code in line {line_index}: {result.categories[-1].lines[-1].code}\ncurrent building line: {result.categories[-1].lines[-1]}")
-                    result.categories[-1].lines[-1].hypothesises = hypothesises
+                        print("no hypothesises")
+                        #raise HTTPException(status_code=status.HTTP_500_BAD_REQUEST,
+                        #                    detail=f"error: no hypothesises for sn code in line {line_index}: {result.categories[-1].lines[-1].code}\ncurrent building line: {result.categories[-1].lines[-1]}")
+                    else:
+                        result.categories[-1].lines[-1].hypothesises = hypothesises
+                        result.categories[-1].lines[-1].hypothesises.sort(reverse=True)
                 elif standard == SmetaLineStandard.TSN:
                     print("here")
                     tsn_piece = await db_api.sprav_edit.get_tsn_piece_by_code(db, result.categories[-1].lines[-1].code)
@@ -201,10 +204,12 @@ async def parse_smeta(db: Session, file: bytes):
                     print("tsn piece: ", tsn_piece)
                     hypothesises = await db_api.sprav_edit.get_tsn_hypothesises_by_tsn_id(db, tsn_piece.id)
                     if hypothesises is None:
-                        raise HTTPException(status_code=status.HTTP_500_BAD_REQUEST,
-                                            detail=f"error: no hypothesises for tsn code in line {line_index}: {result.categories[-1].lines[-1].code}\ncurrent building line: {result.categories[-1].lines[-1]}")
-                    result.categories[-1].lines[-1].hypothesises = hypothesises
-                    result.categories[-1].lines[-1].hypothesises.sort(reverse=True)
+                        print("no hypothesises")
+                        #raise HTTPException(status_code=status.HTTP_500_BAD_REQUEST,
+                        #                    detail=f"error: no hypothesises for tsn code in line {line_index}: {result.categories[-1].lines[-1].code}\ncurrent building line: {result.categories[-1].lines[-1]}")
+                    else:
+                        result.categories[-1].lines[-1].hypothesises = hypothesises
+                        result.categories[-1].lines[-1].hypothesises.sort(reverse=True)
                     b += 1
                 elif standard == SmetaLineStandard.UNDEFINED:
                     lines_with_bad_code_format.append(line_index + 1)
