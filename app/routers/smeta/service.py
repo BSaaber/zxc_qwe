@@ -34,7 +34,7 @@ async def parse_smeta(user_id: int, db: Session = Depends(get_db), file: bytes =
     return result
 
 
-patch_mock = True
+patch_mock = False
 
 
 # TODO хранить имя файла и возвращать с нормальным именем

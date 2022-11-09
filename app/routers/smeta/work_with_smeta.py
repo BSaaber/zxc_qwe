@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from typing import Union
 from app.database import schemas as db_schemas
+from openpyxl.utils import get_column_letter
 
 
 class ColumnIndexes(BaseModel):
@@ -90,20 +91,30 @@ def mock(file: bytes):
 
 
 async def patch_smeta(db: Session, path: str, patches: schemas.PatchSmetaIn):
-    workbook = load_workbook(path, data_only=True)
+    workbook = load_workbook(path)
     worksheet = workbook.active
+    max_col = worksheet.max_column
+    worksheet.insert_cols(max_col)
+    worksheet.insert_cols(max_col)
+    max_spgz_len = 1
+    max_kpgz_len = 1
     for patch in patches.patches:
         spgz_piece = await db_api.sprav_edit.get_spgz_piece_by_id(db, patch.spgz_id)
         spgz_piece_return = db_schemas.SpgzPieceReturn.from_orm(spgz_piece)
-        worksheet.cell(row=patch.line_number, column=40, value=spgz_piece_return.name)
-        worksheet.cell(row=patch.line_number, column=41, value=spgz_piece_return.kpgz_piece.name)
-        print("patch: ", patch)
+        if max_spgz_len < len(spgz_piece_return.name):
+            max_spgz_len = len(spgz_piece_return.name)
+        if max_kpgz_len < len(spgz_piece_return.kpgz_piece.name):
+            max_kpgz_len = len(spgz_piece_return.kpgz_piece.name)
+        worksheet.cell(row=patch.line_number, column=max_col + 1).value = spgz_piece_return.name
+        worksheet.cell(row=patch.line_number, column=max_col + 2).value = spgz_piece_return.kpgz_piece.name
+    worksheet.column_dimensions[get_column_letter(max_col + 1)].width = max_spgz_len
+    worksheet.column_dimensions[get_column_letter(max_col + 2)].width = max_kpgz_len
     workbook.save(path)
     print("saved")
 
 
 async def parse_smeta(db: Session, file: bytes):
-    return mock(file)
+    #return mock(file)
 
     workbook = load_workbook(BytesIO(file), data_only=True)  # .read()?
     worksheet = workbook.active
@@ -187,9 +198,13 @@ async def parse_smeta(db: Session, file: bytes):
                     print("sn piece: ", sn_piece)
                     hypothesises = await db_api.sprav_edit.get_sn_hypothesises_by_sn_id(db, sn_piece.id)
                     if hypothesises is None:
-                        raise HTTPException(status_code=status.HTTP_500_BAD_REQUEST,
-                                            detail=f"error: no hypothesises for sn code in line {line_index}: {result.categories[-1].lines[-1].code}\ncurrent building line: {result.categories[-1].lines[-1]}")
-                    result.categories[-1].lines[-1].hypothesises = hypothesises
+                        print("no hypothesises")
+                        result.categories[-1].lines.pop()
+                        #raise HTTPException(status_code=status.HTTP_500_BAD_REQUEST,
+                        #                    detail=f"error: no hypothesises for sn code in line {line_index}: {result.categories[-1].lines[-1].code}\ncurrent building line: {result.categories[-1].lines[-1]}")
+                    else:
+                        result.categories[-1].lines[-1].hypothesises = hypothesises
+                        result.categories[-1].lines[-1].hypothesises.sort(reverse=True, key=lambda x: x.priority)
                 elif standard == SmetaLineStandard.TSN:
                     print("here")
                     tsn_piece = await db_api.sprav_edit.get_tsn_piece_by_code(db, result.categories[-1].lines[-1].code)
@@ -201,10 +216,13 @@ async def parse_smeta(db: Session, file: bytes):
                     print("tsn piece: ", tsn_piece)
                     hypothesises = await db_api.sprav_edit.get_tsn_hypothesises_by_tsn_id(db, tsn_piece.id)
                     if hypothesises is None:
-                        raise HTTPException(status_code=status.HTTP_500_BAD_REQUEST,
-                                            detail=f"error: no hypothesises for tsn code in line {line_index}: {result.categories[-1].lines[-1].code}\ncurrent building line: {result.categories[-1].lines[-1]}")
-                    result.categories[-1].lines[-1].hypothesises = hypothesises
-                    result.categories[-1].lines[-1].hypothesises.sort(reverse=True)
+                        print("no hypothesises")
+                        result.categories[-1].lines.pop()
+                        #raise HTTPException(status_code=status.HTTP_500_BAD_REQUEST,
+                        #                    detail=f"error: no hypothesises for tsn code in line {line_index}: {result.categories[-1].lines[-1].code}\ncurrent building line: {result.categories[-1].lines[-1]}")
+                    else:
+                        result.categories[-1].lines[-1].hypothesises = hypothesises
+                        result.categories[-1].lines[-1].hypothesises.sort(reverse=True, key=lambda x: x.priority)
                     b += 1
                 elif standard == SmetaLineStandard.UNDEFINED:
                     lines_with_bad_code_format.append(line_index + 1)
