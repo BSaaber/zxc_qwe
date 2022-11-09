@@ -193,7 +193,7 @@ async def parse_smeta(db: Session, file: bytes):
                         #                    detail=f"error: no hypothesises for sn code in line {line_index}: {result.categories[-1].lines[-1].code}\ncurrent building line: {result.categories[-1].lines[-1]}")
                     else:
                         result.categories[-1].lines[-1].hypothesises = hypothesises
-                        result.categories[-1].lines[-1].hypothesises.sort(reverse=True)
+                        result.categories[-1].lines[-1].hypothesises.sort(reverse=True, key=lambda x: x.priority)
                 elif standard == SmetaLineStandard.TSN:
                     print("here")
                     tsn_piece = await db_api.sprav_edit.get_tsn_piece_by_code(db, result.categories[-1].lines[-1].code)
@@ -211,7 +211,7 @@ async def parse_smeta(db: Session, file: bytes):
                         #                    detail=f"error: no hypothesises for tsn code in line {line_index}: {result.categories[-1].lines[-1].code}\ncurrent building line: {result.categories[-1].lines[-1]}")
                     else:
                         result.categories[-1].lines[-1].hypothesises = hypothesises
-                        result.categories[-1].lines[-1].hypothesises.sort(reverse=True)
+                        result.categories[-1].lines[-1].hypothesises.sort(reverse=True, key=lambda x: x.priority)
                     b += 1
                 elif standard == SmetaLineStandard.UNDEFINED:
                     lines_with_bad_code_format.append(line_index + 1)
