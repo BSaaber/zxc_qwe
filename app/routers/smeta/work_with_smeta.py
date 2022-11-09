@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from typing import Union
 from app.database import schemas as db_schemas
+from openpyxl.utils import get_column_letter
 
 
 class ColumnIndexes(BaseModel):
@@ -92,13 +93,22 @@ def mock(file: bytes):
 async def patch_smeta(db: Session, path: str, patches: schemas.PatchSmetaIn):
     workbook = load_workbook(path)
     worksheet = workbook.active
+    max_col = worksheet.max_column
+    worksheet.insert_cols(max_col)
+    worksheet.insert_cols(max_col)
+    max_spgz_len = 1
+    max_kpgz_len = 1
     for patch in patches.patches:
         spgz_piece = await db_api.sprav_edit.get_spgz_piece_by_id(db, patch.spgz_id)
         spgz_piece_return = db_schemas.SpgzPieceReturn.from_orm(spgz_piece)
-        max_col = worksheet.max_column
-        worksheet.insert_cols(3)
+        if max_spgz_len < len(spgz_piece_return.name):
+            max_spgz_len = len(spgz_piece_return.name)
+        if max_kpgz_len < len(spgz_piece_return.kpgz_piece.name):
+            max_kpgz_len = len(spgz_piece_return.kpgz_piece.name)
         worksheet.cell(row=patch.line_number, column=max_col + 1).value = spgz_piece_return.name
         worksheet.cell(row=patch.line_number, column=max_col + 2).value = spgz_piece_return.kpgz_piece.name
+    worksheet.column_dimensions[get_column_letter(max_col + 1)].width = max_spgz_len
+    worksheet.column_dimensions[get_column_letter(max_col + 2)].width = max_kpgz_len
     workbook.save(path)
     print("saved")
 
