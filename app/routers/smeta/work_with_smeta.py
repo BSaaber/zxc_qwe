@@ -90,14 +90,15 @@ def mock(file: bytes):
 
 
 async def patch_smeta(db: Session, path: str, patches: schemas.PatchSmetaIn):
-    workbook = load_workbook(path, data_only=True)
+    workbook = load_workbook(path)
     worksheet = workbook.active
     for patch in patches.patches:
         spgz_piece = await db_api.sprav_edit.get_spgz_piece_by_id(db, patch.spgz_id)
         spgz_piece_return = db_schemas.SpgzPieceReturn.from_orm(spgz_piece)
-        worksheet.cell(row=patch.line_number, column=40, value=spgz_piece_return.name)
-        worksheet.cell(row=patch.line_number, column=41, value=spgz_piece_return.kpgz_piece.name)
-        print("patch: ", patch)
+        max_col = worksheet.max_column
+        worksheet.insert_cols(3)
+        worksheet.cell(row=patch.line_number, column=max_col + 1).value = spgz_piece_return.name
+        worksheet.cell(row=patch.line_number, column=max_col + 2).value = spgz_piece_return.kpgz_piece.name
     workbook.save(path)
     print("saved")
 
