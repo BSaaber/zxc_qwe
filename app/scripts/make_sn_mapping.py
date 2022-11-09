@@ -76,7 +76,7 @@ async def make_tsn_mapping():
                 all_hypo.append(tsn_hypothesis)
 
             if k != 0 and k % 1000 == 0:
-                tsn_result = await db_api.sprav_edit.add_sn_hypothesis_bulk(db, tsn_hypothesis)
+                tsn_result = await db_api.sprav_edit.add_sn_hypothesis_bulk(db, all_hypo)
                 all_hypo = []
 
 
