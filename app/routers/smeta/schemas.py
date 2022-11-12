@@ -4,10 +4,9 @@ from app.database.schemas import HypothesisReturn
 
 
 class SmetaLine(BaseModel):
-    # userful info
-    code: str = "DEFAULT CODE"
-    name: str = "DEFAULT NAME"
-    uom: str = "DEFAULT UOM"
+    code: str = "код не распознан"
+    name: str = "название работы не распознано"
+    uom: str = "  "
     amount: int = 123321
     price: float = 123321
     hypothesises: List[HypothesisReturn] = []
@@ -17,12 +16,15 @@ class SmetaLine(BaseModel):
 
 
 class SmetaCategory(BaseModel):
-    name: str = "DEFAULT CATEGORY NAME"
+    name: str = "название раздела не распознано"
+    total_price: float = 0
     lines: List[SmetaLine] = []
 
 
 class Smeta(BaseModel):
-    address: str = "DEFAULT ADDRESS"
+    address: str = "адрес не распознан"
+    total_price: float = 0
+    name: str = "название не распознано"
     categories: List[SmetaCategory] = []
 
 
@@ -31,5 +33,11 @@ class PatchPair(BaseModel):
     spgz_id: int
 
 
+class ByHandPair(BaseModel):
+    line_number: int
+    spgz_text: str
+
+
 class PatchSmetaIn(BaseModel):
     patches: List[PatchPair] = []
+    by_hand: List[ByHandPair] = []

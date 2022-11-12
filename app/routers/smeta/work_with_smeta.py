@@ -22,9 +22,8 @@ class ColumnIndexes(BaseModel):
 
 
 class ParseMode(Enum):
-    FINDING_ADDRESS = 1
-    FINDING_COLUMNS_INDEXES = 2
-    PARSING_LINES = 3
+    FINDING_COLUMNS_INDEXES = 1
+    PARSING_LINES = 2
 
 
 class SmetaLineStandard(Enum):
@@ -107,6 +106,10 @@ async def patch_smeta(db: Session, path: str, patches: schemas.PatchSmetaIn):
             max_kpgz_len = len(spgz_piece_return.kpgz_piece.name)
         worksheet.cell(row=patch.line_number, column=max_col + 1).value = spgz_piece_return.name
         worksheet.cell(row=patch.line_number, column=max_col + 2).value = spgz_piece_return.kpgz_piece.name
+    for by_hand_patch in patches.by_hand:
+        if max_spgz_len < len(by_hand_patch.spgz_text):
+            max_spgz_len = len(by_hand_patch.spgz_text)
+        worksheet.cell(row=by_hand_patch.line_number, column=max_col + 1).value = by_hand_patch.spgz_text
     worksheet.column_dimensions[get_column_letter(max_col + 1)].width = max_spgz_len
     worksheet.column_dimensions[get_column_letter(max_col + 2)].width = max_kpgz_len
     workbook.save(path)
@@ -114,20 +117,40 @@ async def patch_smeta(db: Session, path: str, patches: schemas.PatchSmetaIn):
 
 
 async def parse_smeta(db: Session, file: bytes):
-    #return mock(file)
+    # return mock(file)
 
     workbook = load_workbook(BytesIO(file), data_only=True)  # .read()?
     worksheet = workbook.active
     result = schemas.Smeta()
-    mode = ParseMode.FINDING_ADDRESS
+    mode = ParseMode.FINDING_COLUMNS_INDEXES
+    searching_address = True
+    searching_name = True
     column_indexes = ColumnIndexes()
     lines_with_bad_code_format = []
     a = 0
     b = 0
     for line_index, row in enumerate(worksheet.iter_rows(values_only=True)):
-        if mode is ParseMode.FINDING_ADDRESS:
-            mode = ParseMode.FINDING_COLUMNS_INDEXES
-        elif mode is ParseMode.FINDING_COLUMNS_INDEXES:
+        if searching_address:
+            if line_index >= 30:
+                print("address not found")
+                searching_address = False
+            if cell_is_not_empty_string(row[0]):
+                if 'по адресу' in row[0]:
+                    print('found по адресу')
+                    result.address = row[0][row[0].find('по адресу') + len('по адресу'):]
+                    if result.address[0] == ':':
+                        result.address = result.address[1:]
+                    searching_address = False
+        if searching_name:
+            if line_index >= 30:
+                print("name not found")
+                searching_name = False
+            if cell_is_not_empty_string(row[0]):
+                if 'наименование' in row[0]:
+                    if 'адрес' not in worksheet.cell(row=line_index, column=1).value:
+                        result.name = worksheet.cell(row=line_index, column=1).value
+                        searching_name = False
+        if mode is ParseMode.FINDING_COLUMNS_INDEXES:
             print(line_index + 1, "| ", row)
             for j, val in enumerate(row):
                 if cell_is_not_empty_string(val):
@@ -140,7 +163,7 @@ async def parse_smeta(db: Session, file: bytes):
                         column_indexes.uom = j
                     elif "кол-во" in val.lower() or "количество" in val.lower():
                         column_indexes.amount = j
-                    elif "всего" in val.lower():
+                    elif "всего" in val.lower() and "текущ" in val.lower():
                         column_indexes.price = j
             print("now column_indexes is: ", column_indexes)
             print(column_indexes.dict().values())
@@ -150,16 +173,37 @@ async def parse_smeta(db: Session, file: bytes):
                 print("MODE CHANGED TO PARSING LINES")
                 print("------------------------------")
         elif mode is ParseMode.PARSING_LINES:
-            # new category
-            if cell_is_not_empty_string(row[0]) and 'раздел' in row[0].lower() and 'итого' not in row[0].lower():
-                print("STARTING NEW CATEGORY")
-                name = row[0].lower()
-                name = name[name.find('раздел') + len('раздел'):]
-                if len(name) != 0 and name[0] == ':':
-                    name = name[1:]
-                result.categories.append(schemas.SmetaCategory(name=name))
-                continue
-            elif cell_is_not_empty_string(row[column_indexes.code]) and get_smeta_standard(
+            if cell_is_not_empty_string(row[0]):
+                razdel_word_found = 'раздел' in row[0].lower()
+                itogo_word_found = 'итого' in row[0].lower()
+                smeta_word_found = 'смет' in row[0].lower()
+                if razdel_word_found and itogo_word_found:
+                    if result.categories:
+                        print('в разделах хоть что-то есть')
+                        if result.categories[-1].total_price == 0:
+                            if cell_is_not_empty_num(row[column_indexes.price]):
+                                result.categories[-1].total_price = row[column_indexes.price]
+                            if cell_is_not_empty_num(row[column_indexes.price - 1]):
+                                result.categories[-1].total_price = row[column_indexes.price - 1]
+                                print('записали цену для раздела ', result.categories[-1].name)
+                elif razdel_word_found and not itogo_word_found:
+                    if result.categories:
+                        if result.categories[-1].total_price == 0 and not result.categories[-1].lines:
+                            print('раздел ', result.categories[-1].name, 'пуст, удаляем')
+                            result.categories.pop()
+                    print("STARTING NEW CATEGORY")
+                    name = row[0].lower()
+                    name = name[name.find('раздел') + len('раздел'):]
+                    if len(name) != 0 and name[0] == ':':
+                        name = name[1:]
+                    result.categories.append(schemas.SmetaCategory(name=name))
+                    continue
+                elif smeta_word_found and itogo_word_found:
+                    if cell_is_not_empty_num(row[column_indexes.price]):
+                        result.total_price = row[column_indexes.price]
+                    if cell_is_not_empty_num(row[column_indexes.price - 1]):
+                        result.total_price = row[column_indexes.price - 1]
+            if cell_is_not_empty_string(row[column_indexes.code]) and get_smeta_standard(
                     row[column_indexes.code] != SmetaLineStandard.UNDEFINED):  # new line
                 print("NEW LINE | ", line_index + 1, " | code:", row[column_indexes.code], " | price: ",
                       row[column_indexes.price])
@@ -200,7 +244,7 @@ async def parse_smeta(db: Session, file: bytes):
                     if hypothesises is None:
                         print("no hypothesises")
                         result.categories[-1].lines.pop()
-                        #raise HTTPException(status_code=status.HTTP_500_BAD_REQUEST,
+                        # raise HTTPException(status_code=status.HTTP_500_BAD_REQUEST,
                         #                    detail=f"error: no hypothesises for sn code in line {line_index}: {result.categories[-1].lines[-1].code}\ncurrent building line: {result.categories[-1].lines[-1]}")
                     else:
                         result.categories[-1].lines[-1].hypothesises = hypothesises
@@ -218,7 +262,7 @@ async def parse_smeta(db: Session, file: bytes):
                     if hypothesises is None:
                         print("no hypothesises")
                         result.categories[-1].lines.pop()
-                        #raise HTTPException(status_code=status.HTTP_500_BAD_REQUEST,
+                        # raise HTTPException(status_code=status.HTTP_500_BAD_REQUEST,
                         #                    detail=f"error: no hypothesises for tsn code in line {line_index}: {result.categories[-1].lines[-1].code}\ncurrent building line: {result.categories[-1].lines[-1]}")
                     else:
                         result.categories[-1].lines[-1].hypothesises = hypothesises
