@@ -1,9 +1,9 @@
-from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
+from fastapi import APIRouter, Depends, HTTPException, status
 from app.security import check_for_moderator_permission
 from typing import List
 import app.database.api as db_api
 import app.database.schemas as db_schemas
-from app.database.schemas import TsnPieceEdit  # , TsnPieceCreate
+from app.database.schemas import TsnPieceEdit, SnPieceEdit, SpgzPieceEdit#, KpgzPieceEdit
 from sqlalchemy.orm import Session
 from app.database.db_init import get_db
 from app.routers.sprav.schemas import *
@@ -21,6 +21,7 @@ async def sprav_hello():
 
 
 # GETTERS
+## All
 @router.get("/tsn", response_model=List[db_schemas.TsnPieceReturn])
 async def get_tsn(offset: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     tsn = await db_api.sprav_edit.get_tsn(db, offset, limit)
@@ -40,19 +41,61 @@ async def get_spgz(offset: int = 0, limit: int = 100, db: Session = Depends(get_
 
 
 @router.get("/kpgz", response_model=List[db_schemas.KpgzPieceReturn])
-async def get_spgz(offset: int = 0, limit: int = 100, db: Session = Depends(get_db)):
+async def get_kpgz(offset: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     kpgz = await db_api.sprav_edit.get_kpgz(db, offset, limit)
+    return kpgz
+
+
+## one
+
+@router.get("/tsn/{id}", response_model=db_schemas.TsnPieceReturn)
+async def get_tsn_piece(id: int, db: Session = Depends(get_db)):
+    tsn = await db_api.sprav_edit.get_tsn_piece_by_id(db, id)
+    return tsn
+
+
+@router.get("/sn/{id}", response_model=db_schemas.SnPieceReturn)
+async def get_sn_piece(id: int, db: Session = Depends(get_db)):
+    sn = await db_api.sprav_edit.get_sn_piece_by_id(db, id)
+    return sn
+
+
+@router.get("/spgz/{id}", response_model=db_schemas.SpgzPieceReturn)
+async def get_spgz_piece(id: int, db: Session = Depends(get_db)):
+    spgz = await db_api.sprav_edit.get_spgz_piece_by_id(db, id)
+    return spgz
+
+
+@router.get("/kpgz/{id}", response_model=db_schemas.KpgzPieceReturn)
+async def get_kpgz_piece(id: int, db: Session = Depends(get_db)):
+    kpgz = await db_api.sprav_edit.get_kpgz_piece_by_id(db, id)
     return kpgz
 
 
 # EDIT ONE PIECE
 
-@router.post("/tsn/edit_one")
+@router.post("/tsn/{id}/edit", response_model=db_schemas.TsnPieceReturn)
 async def edit_tsn_piece(update: TsnPieceEdit, db: Session = Depends(get_db)):
     tsn = await db_api.sprav_edit.edit_tsn_piece(db, update)
     if not tsn:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="error")
-    return "Ok"
+    return tsn
+
+
+@router.post("/sn/{id}/edit", response_model=db_schemas.SnPieceReturn)
+async def edit_sn_piece(update: SnPieceEdit, db: Session = Depends(get_db)):
+    sn = await db_api.sprav_edit.edit_sn_piece(db, update)
+    if not sn:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="error")
+    return sn
+
+
+@router.post("/spgz/{id}/edit", response_model=db_schemas.SpgzPieceReturn)
+async def edit_spgz_piece(update: SpgzPieceEdit, db: Session = Depends(get_db)):
+    spgz = await db_api.sprav_edit.edit_spgz_piece(db, update)
+    if not spgz:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="error")
+    return spgz
 
 # @router.post("/tsn/create_one")
 # async def add_tsn_piece(update_in: TsnPieceCreateIn, db: Session = Depends(get_db)):

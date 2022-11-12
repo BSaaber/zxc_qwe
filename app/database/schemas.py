@@ -66,7 +66,13 @@ class TsnPieceEdit(BaseModel):
     code: Union[str, None] = None
     text: Union[str, None] = None
     price: Union[float, None] = None
-    spgz_piece_id: Union[int, None] = None
+
+
+class SnPieceEdit(BaseModel):
+    id: int
+    code: Union[str, None] = None
+    text: Union[str, None] = None
+    price: Union[float, None] = None
 
 
 class SnPieceBase(BaseModel):
@@ -92,14 +98,6 @@ class SnPieceReturn(SnPieceBase):
         orm_mode = True
 
 
-class SnPieceEdit(BaseModel):
-    id: int
-    code: Union[str, None] = None
-    text: Union[str, None] = None
-    price: Union[float, None] = None
-    spgz_piece_id: Union[int, None] = None
-
-
 class SpgzPieceCreate(BaseModel):
     name: Union[str, None] = None
     mapping_info: Union[str, None] = None
@@ -109,6 +107,17 @@ class SpgzPieceCreate(BaseModel):
     description: Union[str, None] = None
     data_id: int
     kpgz_piece_id: int
+
+
+class SpgzPieceEdit(BaseModel):
+    id: int
+    name: Union[str, None] = None
+    okpd: Union[str, None] = None
+    okpd2: Union[str, None] = None
+    uom: Union[str, None] = None
+    description: Union[str, None] = None
+    data_id: Union[int, None] = None
+    kpgz_piece_id: Union[int, None] = None
 
 
 class KpgzPieceReturn(BaseModel):
@@ -123,6 +132,8 @@ class SpgzPieceReturn(BaseModel):
     name: str
     id: int
     kpgz_piece: KpgzPieceReturn
+    okpd: Union[str, None] = None
+    okpd2: Union[str, None] = None
 
     class Config:
         orm_mode = True
