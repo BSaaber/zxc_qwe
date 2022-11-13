@@ -12,6 +12,9 @@ class SmetaLine(BaseModel):
     hypothesises: List[HypothesisReturn] = []
     spgz_defined: bool = False
 
+    def __lt__(self, other):
+        return self.price < other.price
+
     line_number: int = 11
 
 
@@ -19,6 +22,7 @@ class SmetaCategory(BaseModel):
     name: str = "название раздела не распознано"
     total_price: float = 0
     lines: List[SmetaLine] = []
+    key_line: SmetaLine = SmetaLine()
 
 
 class Smeta(BaseModel):

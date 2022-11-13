@@ -272,7 +272,12 @@ async def parse_smeta(db: Session, file: bytes):
             else:
                 print("TRASH | ", line_index + 1)
 
+    for category in result.categories:
+        if category:
+            category.key_line = max(category.lines)
+
     print(f"\n\n\nTOTAL ERRORS: {len(lines_with_bad_code_format)}\n\n\n")
     print("a", a)
     print("b", b)
+
     return result
