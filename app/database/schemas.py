@@ -128,6 +128,11 @@ class KpgzPieceReturn(BaseModel):
         orm_mode = True
 
 
+class KpgzPieceEdit(BaseModel):
+    id: int
+    name: Union[str, None] = None
+
+
 class SpgzPieceReturn(BaseModel):
     name: str
     id: int

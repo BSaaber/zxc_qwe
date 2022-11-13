@@ -173,6 +173,7 @@ async def parse_smeta(db: Session, file: bytes):
                 print("MODE CHANGED TO PARSING LINES")
                 print("------------------------------")
         elif mode is ParseMode.PARSING_LINES:
+            # парсинг разделов
             if cell_is_not_empty_string(row[0]):
                 razdel_word_found = 'раздел' in row[0].lower()
                 itogo_word_found = 'итого' in row[0].lower()
@@ -182,9 +183,9 @@ async def parse_smeta(db: Session, file: bytes):
                         print('в разделах хоть что-то есть')
                         if result.categories[-1].total_price == 0:
                             if cell_is_not_empty_num(row[column_indexes.price]):
-                                result.categories[-1].total_price = row[column_indexes.price]
+                                result.categories[-1].total_price = round(row[column_indexes.price], 5)
                             if cell_is_not_empty_num(row[column_indexes.price - 1]):
-                                result.categories[-1].total_price = row[column_indexes.price - 1]
+                                result.categories[-1].total_price = round(row[column_indexes.price - 1], 5)
                                 print('записали цену для раздела ', result.categories[-1].name)
                 elif razdel_word_found and not itogo_word_found:
                     if result.categories:
@@ -200,9 +201,19 @@ async def parse_smeta(db: Session, file: bytes):
                     continue
                 elif smeta_word_found and itogo_word_found:
                     if cell_is_not_empty_num(row[column_indexes.price]):
-                        result.total_price = row[column_indexes.price]
+                        result.total_price = round(row[column_indexes.price], 5)
                     if cell_is_not_empty_num(row[column_indexes.price - 1]):
-                        result.total_price = row[column_indexes.price - 1]
+                        result.total_price = round(row[column_indexes.price - 1], 5)
+            # парсинг цены
+            if cell_is_not_empty_string(row[column_indexes.name]):
+                if 'всего' in row[column_indexes.name].lower():
+                    if result.categories:
+                        if result.categories[-1].lines:
+                            if cell_is_not_empty_num(row[column_indexes.price]):
+                                result.categories[-1].lines[-1].price = round(row[column_indexes.price], 5)
+                            if cell_is_not_empty_num(row[column_indexes.price - 1]):
+                                result.categories[-1].lines[-1].price = round(row[column_indexes.price - 1], 5)
+            # парсинг основной информации строки
             if cell_is_not_empty_string(row[column_indexes.code]) and get_smeta_standard(
                     row[column_indexes.code] != SmetaLineStandard.UNDEFINED):  # new line
                 print("NEW LINE | ", line_index + 1, " | code:", row[column_indexes.code], " | price: ",
@@ -215,20 +226,9 @@ async def parse_smeta(db: Session, file: bytes):
                 result.categories[-1].lines[-1].code = row[column_indexes.code]
                 result.categories[-1].lines[-1].line_number = line_index + 1
 
-                # find price | problem - sometimes lines are united and have only sum price
-
-                # elif cell_is_empty(row[column_indexes.name]) and (
-                #        cell_is_not_empty_num(row[column_indexes.price]) or cell_is_not_empty_num(
-                #        row[column_indexes.price - 1])):  # price
-                #    print("NEW LINE PRICE")
-                #    if cell_is_not_empty_num(row[column_indexes.price]):
-                #        result.categories[-1].lines[-1].price = row[column_indexes.price]
-                #    else:
-                #        result.categories[-1].lines[-1].price = row[column_indexes.price - 1]
-
-                ############################################
-                result.categories[-1].lines[-1].price = -321
-                ############################################
+                if cell_is_not_empty_num(worksheet.cell(row=line_index, column=column_indexes.price - 1).value):
+                    result.categories[-1].lines[-1].line_number = worksheet.cell(row=line_index,
+                                                                                 column=column_indexes.price - 1).value
 
                 standard = get_smeta_standard(result.categories[-1].lines[-1].code)
                 print("stadard: ", standard.name)
@@ -236,6 +236,7 @@ async def parse_smeta(db: Session, file: bytes):
                 if standard == SmetaLineStandard.SN:
                     sn_piece = await db_api.sprav_edit.get_sn_piece_by_code(db, result.categories[-1].lines[-1].code)
                     if sn_piece is None:
+                        print('no such sn')
                         lines_with_bad_code_format.append(line_index + 1)
                         result.categories[-1].lines.pop()
                         continue
@@ -243,9 +244,7 @@ async def parse_smeta(db: Session, file: bytes):
                     hypothesises = await db_api.sprav_edit.get_sn_hypothesises_by_sn_id(db, sn_piece.id)
                     if hypothesises is None:
                         print("no hypothesises")
-                        result.categories[-1].lines.pop()
-                        # raise HTTPException(status_code=status.HTTP_500_BAD_REQUEST,
-                        #                    detail=f"error: no hypothesises for sn code in line {line_index}: {result.categories[-1].lines[-1].code}\ncurrent building line: {result.categories[-1].lines[-1]}")
+                        #result.categories[-1].lines.pop()
                     else:
                         result.categories[-1].lines[-1].hypothesises = hypothesises
                         result.categories[-1].lines[-1].hypothesises.sort(reverse=True, key=lambda x: x.priority)
@@ -253,6 +252,7 @@ async def parse_smeta(db: Session, file: bytes):
                     print("here")
                     tsn_piece = await db_api.sprav_edit.get_tsn_piece_by_code(db, result.categories[-1].lines[-1].code)
                     if tsn_piece is None:
+                        print('no such tsn')
                         lines_with_bad_code_format.append(line_index + 1)
                         result.categories[-1].lines.pop()
                         a += 1
@@ -261,9 +261,7 @@ async def parse_smeta(db: Session, file: bytes):
                     hypothesises = await db_api.sprav_edit.get_tsn_hypothesises_by_tsn_id(db, tsn_piece.id)
                     if hypothesises is None:
                         print("no hypothesises")
-                        result.categories[-1].lines.pop()
-                        # raise HTTPException(status_code=status.HTTP_500_BAD_REQUEST,
-                        #                    detail=f"error: no hypothesises for tsn code in line {line_index}: {result.categories[-1].lines[-1].code}\ncurrent building line: {result.categories[-1].lines[-1]}")
+                        #result.categories[-1].lines.pop()
                     else:
                         result.categories[-1].lines[-1].hypothesises = hypothesises
                         result.categories[-1].lines[-1].hypothesises.sort(reverse=True, key=lambda x: x.priority)

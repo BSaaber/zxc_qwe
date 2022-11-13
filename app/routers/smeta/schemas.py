@@ -7,8 +7,8 @@ class SmetaLine(BaseModel):
     code: str = "код не распознан"
     name: str = "название работы не распознано"
     uom: str = "  "
-    amount: int = 123321
-    price: float = 123321
+    amount: int = 0
+    price: float = 0
     hypothesises: List[HypothesisReturn] = []
     spgz_defined: bool = False
 

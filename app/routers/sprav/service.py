@@ -3,7 +3,7 @@ from app.security import check_for_moderator_permission
 from typing import List
 import app.database.api as db_api
 import app.database.schemas as db_schemas
-from app.database.schemas import TsnPieceEdit, SnPieceEdit, SpgzPieceEdit#, KpgzPieceEdit
+from app.database.schemas import TsnPieceEdit, SnPieceEdit, SpgzPieceEdit, KpgzPieceEdit
 from sqlalchemy.orm import Session
 from app.database.db_init import get_db
 from app.routers.sprav.schemas import *
@@ -97,18 +97,12 @@ async def edit_spgz_piece(update: SpgzPieceEdit, db: Session = Depends(get_db)):
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="error")
     return spgz
 
-# @router.post("/tsn/create_one")
-# async def add_tsn_piece(update_in: TsnPieceCreateIn, db: Session = Depends(get_db)):
-#    update = TsnPieceCreate(**update_in.dict())
-#    tsn = await db_api.sprav_edit.add_tsn_piece(db, update)
-#    if not tsn:
-#        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="error")
-#    return "Ok"
+
+@router.post("/kpgz/{id}/edit", response_model=db_schemas.KpgzPieceReturn)
+async def edit_spgz_piece(update: KpgzPieceEdit, db: Session = Depends(get_db)):
+    kpgz = await db_api.sprav_edit.edit_kpgz_piece(db, update)
+    if not kpgz:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="error")
+    return kpgz
 
 
-# @router.delete("/tsn/{id}")
-# async def add_tsn_piece(id: int, db: Session = Depends(get_db)):
-#    res = await db_api.sprav_edit.delete_tsn_piece(db, id)
-#    if not res:
-#        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="error")
-#    return "Ok"
