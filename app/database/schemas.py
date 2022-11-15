@@ -63,6 +63,7 @@ class TsnPieceReturn(TsnPieceBase):
 
 class TsnPieceEdit(BaseModel):
     id: int
+    uom: Union[str, None] = None
     code: Union[str, None] = None
     text: Union[str, None] = None
     price: Union[float, None] = None
@@ -70,6 +71,7 @@ class TsnPieceEdit(BaseModel):
 
 class SnPieceEdit(BaseModel):
     id: int
+    uom: Union[str, None] = None
     code: Union[str, None] = None
     text: Union[str, None] = None
     price: Union[float, None] = None
@@ -136,7 +138,8 @@ class KpgzPieceEdit(BaseModel):
 class SpgzPieceReturn(BaseModel):
     name: str
     id: int
-    uom: str
+    uom: Union[str, None] = None
+    description: Union[str, None] = None
     kpgz_piece: KpgzPieceReturn
     okpd: Union[str, None] = None
     okpd2: Union[str, None] = None
