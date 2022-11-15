@@ -136,6 +136,7 @@ class KpgzPieceEdit(BaseModel):
 class SpgzPieceReturn(BaseModel):
     name: str
     id: int
+    uom: str
     kpgz_piece: KpgzPieceReturn
     okpd: Union[str, None] = None
     okpd2: Union[str, None] = None
