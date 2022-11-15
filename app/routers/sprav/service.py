@@ -75,7 +75,7 @@ async def get_kpgz_piece(id: int, db: Session = Depends(get_db)):
 # EDIT ONE PIECE
 
 @router.post("/tsn/{id}/edit", response_model=db_schemas.TsnPieceReturn)
-async def edit_tsn_piece(update: TsnPieceEdit, db: Session = Depends(get_db)):
+async def edit_tsn_piece(id: int, update: TsnPieceEdit, db: Session = Depends(get_db)):
     tsn = await db_api.sprav_edit.edit_tsn_piece(db, update)
     if not tsn:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="error")
@@ -83,15 +83,15 @@ async def edit_tsn_piece(update: TsnPieceEdit, db: Session = Depends(get_db)):
 
 
 @router.post("/sn/{id}/edit", response_model=db_schemas.SnPieceReturn)
-async def edit_sn_piece(update: SnPieceEdit, db: Session = Depends(get_db)):
+async def edit_sn_piece(id: int, update: SnPieceEdit, db: Session = Depends(get_db)):
     sn = await db_api.sprav_edit.edit_sn_piece(db, update)
     if not sn:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="error")
     return sn
 
 
-@router.post("/spgz/{id}/edit", response_model=db_schemas.SpgzPieceReturn)
-async def edit_spgz_piece(update: SpgzPieceEdit, db: Session = Depends(get_db)):
+@router.post("/spgz/{user_id}/edit", response_model=db_schemas.SpgzPieceReturn)
+async def edit_spgz_piece(user_id: int, update: SpgzPieceEdit, db: Session = Depends(get_db)):
     spgz = await db_api.sprav_edit.edit_spgz_piece(db, update)
     if not spgz:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="error")
@@ -99,7 +99,7 @@ async def edit_spgz_piece(update: SpgzPieceEdit, db: Session = Depends(get_db)):
 
 
 @router.post("/kpgz/{id}/edit", response_model=db_schemas.KpgzPieceReturn)
-async def edit_spgz_piece(update: KpgzPieceEdit, db: Session = Depends(get_db)):
+async def edit_spgz_piece(id: int, update: KpgzPieceEdit, db: Session = Depends(get_db)):
     kpgz = await db_api.sprav_edit.edit_kpgz_piece(db, update)
     if not kpgz:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="error")

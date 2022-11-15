@@ -211,7 +211,7 @@ async def get_kpgz_piece_by_name(db: Session, name: str):
     return db.query(db_models.KpgzPiece).filter(db_models.KpgzPiece.name == name).first()
 
 
-async def edit_kpgz_piece(db: Session, kpgz_piece: schemas.TsnPieceEdit):  # двойная запись?
+async def edit_kpgz_piece(db: Session, kpgz_piece: schemas.KpgzPieceEdit):  # двойная запись?
     update = {k: v for k, v in kpgz_piece.dict().items() if v is not None}
     del update["id"]
     db.query(db_models.KpgzPiece).filter(db_models.KpgzPiece.id == kpgz_piece.id).update(update)
