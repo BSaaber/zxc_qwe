@@ -1,5 +1,6 @@
 import re
 
+import openpyxl
 from openpyxl import load_workbook
 from io import BytesIO
 from enum import Enum
@@ -11,6 +12,7 @@ from pydantic import BaseModel
 from typing import Union
 from app.database import schemas as db_schemas
 from openpyxl.utils import get_column_letter
+from openpyxl.styles import PatternFill
 
 
 class ColumnIndexes(BaseModel):
@@ -92,34 +94,42 @@ def mock(file: bytes):
 async def patch_smeta(db: Session, path: str, patches: schemas.PatchSmetaIn):
     workbook = load_workbook(path)
     worksheet = workbook.active
-    max_col = worksheet.max_column
-    worksheet.insert_cols(max_col)
-    worksheet.insert_cols(max_col)
-    max_spgz_len = 1
-    max_kpgz_len = 1
+    #max_col = worksheet.max_column
+    #worksheet.insert_cols(max_col)
+    #worksheet.insert_cols(max_col)
+    #max_spgz_len = 1
+    #max_kpgz_len = 1
     for patch in patches.patches:
         spgz_piece = await db_api.sprav_edit.get_spgz_piece_by_id(db, patch.spgz_id)
         spgz_piece_return = db_schemas.SpgzPieceReturn.from_orm(spgz_piece)
-        if max_spgz_len < len(spgz_piece_return.name):
-            max_spgz_len = len(spgz_piece_return.name)
-        if max_kpgz_len < len(spgz_piece_return.kpgz_piece.name):
-            max_kpgz_len = len(spgz_piece_return.kpgz_piece.name)
-        worksheet.cell(row=patch.line_number, column=max_col + 1).value = spgz_piece_return.name
-        worksheet.cell(row=patch.line_number, column=max_col + 2).value = spgz_piece_return.kpgz_piece.name
+        #if max_spgz_len < len(spgz_piece_return.name):
+        #    max_spgz_len = len(spgz_piece_return.name)
+        #if max_kpgz_len < len(spgz_piece_return.kpgz_piece.name):
+        #    max_kpgz_len = len(spgz_piece_return.kpgz_piece.name)
+        worksheet.cell(row=patch.line_number, column=3).value = spgz_piece_return.name
+        worksheet.cell(row=patch.line_number, column=4).value = spgz_piece_return.kpgz_piece.name
     for by_hand_patch in patches.by_hand:
-        if max_spgz_len < len(by_hand_patch.spgz_text):
-            max_spgz_len = len(by_hand_patch.spgz_text)
-        worksheet.cell(row=by_hand_patch.line_number, column=max_col + 1).value = by_hand_patch.spgz_text
-    worksheet.column_dimensions[get_column_letter(max_col + 1)].width = max_spgz_len
-    worksheet.column_dimensions[get_column_letter(max_col + 2)].width = max_kpgz_len
+        #if max_spgz_len < len(by_hand_patch.spgz_text):
+        #    max_spgz_len = len(by_hand_patch.spgz_text)
+        worksheet.cell(row=by_hand_patch.line_number, column=3).value = by_hand_patch.spgz_text
+    #worksheet.column_dimensions[get_column_letter(max_col + 1)].width = max_spgz_len
+    #worksheet.column_dimensions[get_column_letter(max_col + 2)].width = max_kpgz_len
+    key_line_color = PatternFill(start_color='FFD966',
+                                 end_color='FFD966',
+                                 fill_type='solid')
+    for key_line in patches.key_lines:
+        for i in range(1, 10):
+            worksheet.cell(row=key_line, column=i).fill = key_line_color
+
     workbook.save(path)
     print("saved")
 
 
-async def parse_smeta(db: Session, file: bytes):
+async def parse_smeta(db: Session, path: str, result_path: str, general_data: schemas.ParseSmetaIn):
     # return mock(file)
 
-    workbook = load_workbook(BytesIO(file), data_only=True)  # .read()?
+    workbook = load_workbook(path, data_only=True)
+    #workbook = load_workbook(BytesIO(file), data_only=True)  # file: bytes
     worksheet = workbook.active
     result = schemas.Smeta()
     mode = ParseMode.FINDING_COLUMNS_INDEXES
@@ -129,6 +139,7 @@ async def parse_smeta(db: Session, file: bytes):
     lines_with_bad_code_format = []
     a = 0
     b = 0
+    total_number_of_lines = 0
     for line_index, row in enumerate(worksheet.iter_rows(values_only=True)):
         if searching_address:
             if line_index >= 30:
@@ -147,9 +158,10 @@ async def parse_smeta(db: Session, file: bytes):
                 searching_name = False
             if cell_is_not_empty_string(row[0]):
                 if 'наименование' in row[0]:
-                    if 'адрес' not in worksheet.cell(row=line_index, column=1).value:
-                        result.name = worksheet.cell(row=line_index, column=1).value
-                        searching_name = False
+                    if cell_is_not_empty_string(worksheet.cell(row=line_index, column=1).value):
+                        if 'адрес' not in worksheet.cell(row=line_index, column=1).value:
+                            result.name = worksheet.cell(row=line_index, column=1).value
+                            searching_name = False
         if mode is ParseMode.FINDING_COLUMNS_INDEXES:
             print(line_index + 1, "| ", row)
             for j, val in enumerate(row):
@@ -219,16 +231,17 @@ async def parse_smeta(db: Session, file: bytes):
                 print("NEW LINE | ", line_index + 1, " | code:", row[column_indexes.code], " | price: ",
                       row[column_indexes.price])
                 result.categories[-1].lines.append(schemas.SmetaLine())
+                total_number_of_lines += 1
                 result.categories[-1].lines[-1].code = row[column_indexes.code]
                 result.categories[-1].lines[-1].name = row[column_indexes.name]
                 result.categories[-1].lines[-1].uom = row[column_indexes.uom]
                 result.categories[-1].lines[-1].amount = row[column_indexes.amount]
                 result.categories[-1].lines[-1].code = row[column_indexes.code]
-                result.categories[-1].lines[-1].line_number = line_index + 1
+                result.categories[-1].lines[-1].line_number = total_number_of_lines + 15  # line_index + 1
 
-                if cell_is_not_empty_num(worksheet.cell(row=line_index, column=column_indexes.price - 1).value):
-                    result.categories[-1].lines[-1].line_number = worksheet.cell(row=line_index,
-                                                                                 column=column_indexes.price - 1).value
+                #if cell_is_not_empty_num(worksheet.cell(row=line_index, column=column_indexes.price - 1).value):
+                #    result.categories[-1].lines[-1].line_number = worksheet.cell(row=line_index,
+                #                                                                 column=column_indexes.price - 1).value
 
                 standard = get_smeta_standard(result.categories[-1].lines[-1].code)
                 print("stadard: ", standard.name)
@@ -239,12 +252,13 @@ async def parse_smeta(db: Session, file: bytes):
                         print('no such sn')
                         lines_with_bad_code_format.append(line_index + 1)
                         result.categories[-1].lines.pop()
+                        total_number_of_lines -= 1
                         continue
                     print("sn piece: ", sn_piece)
                     hypothesises = await db_api.sprav_edit.get_sn_hypothesises_by_sn_id(db, sn_piece.id)
                     if hypothesises is None:
                         print("no hypothesises")
-                        #result.categories[-1].lines.pop()
+                        # result.categories[-1].lines.pop()
                     else:
                         result.categories[-1].lines[-1].hypothesises = hypothesises
                         result.categories[-1].lines[-1].hypothesises.sort(reverse=True, key=lambda x: x.priority)
@@ -255,13 +269,14 @@ async def parse_smeta(db: Session, file: bytes):
                         print('no such tsn')
                         lines_with_bad_code_format.append(line_index + 1)
                         result.categories[-1].lines.pop()
+                        total_number_of_lines -= 1
                         a += 1
                         continue
                     print("tsn piece: ", tsn_piece)
                     hypothesises = await db_api.sprav_edit.get_tsn_hypothesises_by_tsn_id(db, tsn_piece.id)
                     if hypothesises is None:
                         print("no hypothesises")
-                        #result.categories[-1].lines.pop()
+                        # result.categories[-1].lines.pop()
                     else:
                         result.categories[-1].lines[-1].hypothesises = hypothesises
                         result.categories[-1].lines[-1].hypothesises.sort(reverse=True, key=lambda x: x.priority)
@@ -275,6 +290,33 @@ async def parse_smeta(db: Session, file: bytes):
     for category in result.categories:
         if category:
             category.key_line = max(category.lines)
+
+    result_workbook = load_workbook(result_path)
+    result_worksheet = result_workbook.active
+    result_line_number = 16
+    for category in result.categories:
+        for line in category.lines:
+            result_worksheet.cell(row=result_line_number, column=1).value = result_line_number - 15
+            result_worksheet.cell(row=result_line_number, column=5).value = line.code
+            result_worksheet.cell(row=result_line_number, column=6).value = line.name
+            result_worksheet.cell(row=result_line_number, column=7).value = line.uom
+            result_worksheet.cell(row=result_line_number, column=8).value = line.amount
+            result_worksheet.cell(row=result_line_number, column=9).value = line.price
+            result_line_number += 1
+
+    if general_data.name is not None:
+        result.name = general_data.name
+    if general_data.address is not None:
+        result.address = general_data.address
+
+    if result.name is not None:
+        result_worksheet.cell(row=3, column=4).value = result.name
+    if result.address is not None:
+        result_worksheet.cell(row=4, column=4).value = result.address
+    if result.total_price is not None:
+        result_worksheet.cell(row=5, column=4).value = result.total_price
+
+    result_workbook.save(result_path)
 
     print(f"\n\n\nTOTAL ERRORS: {len(lines_with_bad_code_format)}\n\n\n")
     print("a", a)

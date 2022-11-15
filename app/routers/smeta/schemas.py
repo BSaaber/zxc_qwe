@@ -45,3 +45,10 @@ class ByHandPair(BaseModel):
 class PatchSmetaIn(BaseModel):
     patches: List[PatchPair] = []
     by_hand: List[ByHandPair] = []
+    key_lines: List[int] = []
+
+
+class ParseSmetaIn(BaseModel):
+    address: Union[str, None] = None
+    name: Union[str, None] = None
+
