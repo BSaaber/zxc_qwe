@@ -108,6 +108,7 @@ async def patch_smeta(db: Session, path: str, patches: schemas.PatchSmetaIn):
         #    max_kpgz_len = len(spgz_piece_return.kpgz_piece.name)
         worksheet.cell(row=patch.line_number, column=3).value = spgz_piece_return.name
         worksheet.cell(row=patch.line_number, column=4).value = spgz_piece_return.kpgz_piece.name
+        worksheet.cell(row=patch.line_number, column=2).value = spgz_piece_return.data_id
     for by_hand_patch in patches.by_hand:
         #if max_spgz_len < len(by_hand_patch.spgz_text):
         #    max_spgz_len = len(by_hand_patch.spgz_text)
