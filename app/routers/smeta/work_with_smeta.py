@@ -261,7 +261,8 @@ async def parse_smeta(db: Session, path: str, result_path: str, general_data: sc
                         print("no hypothesises")
                         # result.categories[-1].lines.pop()
                     else:
-                        result.categories[-1].lines[-1].hypothesises = hypothesises
+                        hypo_dict = {hypo.priority: hypo for hypo in hypothesises}
+                        result.categories[-1].lines[-1].hypothesises = list(hypo_dict.values()) # hypothesises
                         result.categories[-1].lines[-1].hypothesises.sort(reverse=True, key=lambda x: x.priority)
                 elif standard == SmetaLineStandard.TSN:
                     print("here")
